@@ -1,0 +1,244 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Area Chart</title>
+  <script src="./js/common/pixi-legacy.min.js"></script>
+  <script src="./js/common/gsap.min.js"></script>
+  <script src="./js/common/moment.min.js"></script>
+  <script src="./js/common/hammer.min.js"></script>
+
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+    }
+    canvas {
+      display: block;
+    }
+    #loading {
+      position: fixed;
+      top: 0;
+      right: 0;
+      left: 0;
+      bottom: 0;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      transition: 0.3s;
+    }
+  </style>
+</head>
+<body style="width: 100%; height: 100%;">
+  <div id="main">
+    <canvas id="chart"></canvas>
+    <div id="loading">
+      <img src="./images/loading.svg">
+    </div>
+  </div>
+  
+  <script src="./js/getUrlParams.js"></script>
+  <script src="./js/ws_area.js"></script>
+  <script src="./js/chart_area.js"></script>
+  <script src="./js/main.js"></script>
+
+  <!-- ws run -->
+  <script>
+    const url_params = getAllUrlParams(window.location.href)
+
+    const url = window.location.host
+    const option = {
+      // url: window.location.protocol === 'https:' ? `wss://${url}/socket` : `ws://${url}/socket`,
+      url: 'wss://m.zbg-coin.com/socket',
+      market_id: parseInt(url_params.item),
+      type: url_params.type
+    }
+    const ws = new WS(option.url, option.market_id, option.type)
+    ws.start()
+  </script>
+  <!-- ws run over -->
+
+  <!-- brower active -->
+  <script>
+    let active = true
+    var hidden, visibilityChange
+
+    if (typeof document.hidden !== 'undefined') {
+      hidden = 'hidden'
+      visibilityChange = 'visibilitychange'
+    } else if (typeof document.mozHidden !== 'undefined') { // Firefox up to v17
+      hidden = 'mozHidden'
+      visibilityChange = 'mozvisibilitychange'
+    } else if (typeof document.webkitHidden !== 'undefined') { // Chrome up to v32, Android up to v4.4, Blackberry up to v10
+      hidden = 'webkitHidden'
+      visibilityChange = 'webkitvisibilitychange'
+    }
+
+    if (typeof document.addEventListener === 'undefined' || typeof document[hidden] === 'undefined') {
+      alert('This demo requires a modern browser that supports the Page Visibility API.')
+    } else {
+      document.addEventListener(visibilityChange, handleVisibilityChange, false)
+    }
+
+    async function handleVisibilityChange () {
+      if (document[hidden]) {
+        active = false
+        windowHidden()
+      } else {
+        active = true
+        windowVisible()
+      }
+    }
+  </script>
+  <!-- brower active over -->
+
+  <!-- data -->
+  <script>
+    let chartData = []
+    let tradeData = []
+
+    let chart
+
+    function firstLoad (data) {
+      const promise = new Promise(resolve => {
+        chartData = data.map(item => [parseFloat(item.value), item.time])
+        resolve()
+      })
+      promise.then(() => {
+        const fakeTrade = []
+        for (let i = 0; i < chartData.length - 1; i++) {
+          fakeTrade.push(parseFloat(Math.random() * 300 + 100).toFixed(5))
+        }
+        fakeTrade.push(parseFloat(Math.random() * 100).toFixed(5))
+        tradeData = fakeTrade
+      })
+      .then(()=> {
+        // run pixi
+        chart = new Chart('chart', null, option)
+        chart.startChart(chartData, tradeData)
+      })
+      .then(() => {
+        init()
+      })
+    }
+
+    function realTime (data) {
+      const lastWs = data[data.length - 1]
+      // const test = Number((parseFloat(lastWs.value) + Math.random() * 40 - 20).toFixed(2))
+      const realChartValue = [parseFloat(lastWs.value), lastWs.time]
+      // const realChartValue = [test, lastWs.time]
+
+      chartData.pop()
+      chartData.push(realChartValue)
+
+      const tradeValue = tradeData[tradeData.length - 1]
+      const realTradeValue = (parseFloat(tradeValue) + parseFloat(Math.random() * 2)).toFixed(5)
+      tradeData.pop()
+      tradeData.push(realTradeValue)
+
+      if(active) {
+        chartRealtime()
+      }
+    }
+
+    function update (data) {
+      const lastWs = data[data.length - 1]
+      const updateChartValue = [parseFloat(lastWs.value), lastWs.time]
+      const updateTradeValue = parseFloat(Math.random() * 200 + 100)
+
+      chartData.push(updateChartValue)
+      tradeData.push(updateTradeValue)
+      
+      if(active) {
+        chartUpdate()
+      }
+    }
+  </script>
+  <!-- data over -->
+
+  <!-- pixijs -->
+  <script>
+    function init() {
+      let pan = false
+
+      window.onresize = () => {
+        chart.windowResize()
+      }
+
+      // 互動 - mobile
+      const canvas = document.getElementById('chart')
+      const hammerOnTap = event => chart.hammerOnTap(event, chartData, tradeData)
+      const hammerOnPanStart = event => {
+        chart.hammerOnPanStart(event)
+        pan = true
+      }
+      const hammerOnPanMove = event => chart.hammerOnPanMove(event, chartData, tradeData)
+      const hammerOnPanEnd = () => {
+        chart.hammerOnPanEnd()
+        pan = false
+      }
+      const hammerOnZoomStart = event => {
+        chart.hammerOnZoomStart(event)
+        pan = true
+      }
+      const hammerOnZoomMove = event => chart.hammerOnZoomMove(event, chartData, tradeData)
+      const hammerOnZoomEnd = event => {
+        chart.hammerOnZoomEnd()
+        pan = false
+      }
+
+      const mc = new Hammer(canvas)
+      mc.add(new Hammer.Pinch({ threshold: 0 }))
+      mc.on('tap', hammerOnTap)
+        .on('panstart', hammerOnPanStart)
+        .on('panmove', hammerOnPanMove)
+        .on('panend', hammerOnPanEnd)
+        .on('pinchstart', hammerOnZoomStart)
+        .on('pinchmove', hammerOnZoomMove)
+        .on('pinchend', hammerOnZoomEnd)
+
+      // 互動 - computer
+      const computerOnZoom = event => {
+        chart.computerOnZoom(event, chartData, tradeData)
+        event.preventDefault();
+      }
+      const computerOnMove = event => {
+        if(!pan) {
+          chart.computerOnMove(event, chartData, tradeData)
+        }
+      }
+      const computerOnOut = () => chart.computerOnOut()
+
+      canvas.addEventListener('mousewheel', computerOnZoom)
+      canvas.addEventListener('mousemove', computerOnMove)
+      canvas.addEventListener('mouseout', computerOnOut)
+    }
+
+    function chartRealtime() {
+      chart.updateRealtime(chartData, tradeData, chartData.length - 1)
+    }
+
+    function chartRealtimeTab() {
+      chart.updateRealtimeTab(chartData, tradeData, chartData.length - 1)
+    }
+
+    function chartUpdate() {
+      chart.updateNewData(chartData, tradeData, chartData.length - 1)
+    }
+
+    function chartUpdateTab() {
+      chart.updateNewDataTab(chartData, tradeData, chartData.length - 1)
+    }
+
+    function windowHidden() {
+      chart.windowHidden()
+    }
+
+    function windowVisible () {
+      chart.windowVisible(chartData, tradeData)
+    }
+  </script>
+  <!-- pixijs over -->
+</body>
+</html>
