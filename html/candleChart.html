@@ -49,8 +49,8 @@
 
     const url = window.location.host
     const option = {
-      // url: window.location.protocol === 'https:' ? `wss://${url}/socket` : `ws://${url}/socket`,
-      url: 'wss://m.zbg-coin.com/socket',
+      url: window.location.protocol === 'https:' ? `wss://${url}/socket` : `ws://${url}/socket`,
+      // url: 'wss://m.zbg-coin.com/socket',
       market_id: parseInt(url_params.item),
       type: url_params.type
     }
