@@ -308,7 +308,7 @@ class Chart {
     // area background mask
     vm.areaBackground = new PIXI.Graphics()
     vm.areaBackground.beginTextureFill({ texture: vm.gradient(vm.option.area.background[0], vm.option.area.background[1], vm.mainContainerHeight * 9 / 11) })
-    vm.areaBackground.drawRect(0, vm.mainContainerHeight / 11 + vm.dataPaddingY, vm.appWidth - vm.chartMaskRightSpace, vm.topHeight - vm.dataPaddingY * 2)
+    vm.areaBackground.drawRect(0, vm.mainContainerHeight / 11 + vm.dataPaddingY, vm.appWidth - vm.chartMaskRightSpace, vm.topHeight - vm.dataPaddingY)
     vm.areaBackground.endFill()
     vm.areaBackground.mask = vm.areaBackgroundContainer
     vm.topContainer.addChild(vm.areaBackground)
@@ -848,7 +848,6 @@ class Chart {
 
   getSplitData () {
     const vm = this
-    // // yLabel
     const yChildren = vm.ySplitLabelContainer.children
 
     const yText_1 = vm.areaMaxData
@@ -1222,7 +1221,7 @@ class Chart {
     const maxDataLength = Math.ceil(vm.appWidth / (vm.dataSpace * vm.scaleX))
     const offsetMax = -(chartData.length) * vm.dataSpace * vm.scaleX + Math.floor((vm.appWidth - vm.chartRightSpace) / (vm.dataSpace * vm.scaleX)) * vm.dataSpace * vm.scaleX
 
-    if (areaPosX - offsetMax <= vm.dataSpace * 2 * vm.scaleX && vm.dataSpace * chartData.length * vm.scaleX) {
+    if (areaPosX - offsetMax <= vm.dataSpace * 2 * vm.scaleX && vm.dataSpace * chartData.length * vm.scaleX > vm.appWidth) {
       gsap.to(vm.areaContainer, {
         x: offsetMax,
         duration: 0.3

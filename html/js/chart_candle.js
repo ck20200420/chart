@@ -1675,7 +1675,7 @@ class Chart {
     const candlePosX = vm.candleContainer.position.x
     const offsetMax = -(chartData.length) * vm.dataSpace * vm.scaleX + Math.floor((vm.appWidth - vm.chartRightSpace) / (vm.dataSpace * vm.scaleX)) * vm.dataSpace * vm.scaleX
 
-    if (candlePosX - offsetMax <= vm.dataSpace * 2 * vm.scaleX && vm.dataSpace * chartData.length * vm.scaleX) {
+    if (candlePosX - offsetMax <= vm.dataSpace * 2 * vm.scaleX && vm.dataSpace * chartData.length * vm.scaleX > vm.appWidth) {
       gsap.to(vm.candleContainer, { x: offsetMax, duration: 0.3 })
       gsap.to(vm.tradeContainer, { x: offsetMax, duration: 0.3 })
       gsap.to(vm.topMALineContaier, { x: offsetMax, duration: 0.3 })
